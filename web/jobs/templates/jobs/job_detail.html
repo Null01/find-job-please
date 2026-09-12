@@ -1,0 +1,118 @@
+{% extends "base.html" %}
+{% block title %}{{ job.title }} · FindJob IA{% endblock %}
+{% block extra_head %}
+    .back-link{display:inline-block; font-size:14px; font-weight:600; color:var(--accent); margin-bottom:16px;}
+    .head{display:flex; gap:16px; align-items:flex-start; margin-bottom:6px;}
+    .avatar{width:52px; height:52px; border-radius:12px; overflow:hidden; background:var(--surface-2);
+        border:1px solid var(--border); display:grid; place-items:center; flex:none;}
+    .avatar img{width:100%; height:100%; object-fit:contain;}
+    .avatar .ini{display:none; font-weight:700; color:var(--faint); font-size:22px;}
+    .avatar.noimg .ini{display:block;}
+    h1{font-size:24px; line-height:1.25; letter-spacing:-.01em; margin:0 0 6px;}
+    .company-line{color:var(--muted); font-size:15px;}
+    .company-line b{color:var(--text);}
+    .badges{display:flex; gap:7px; flex-wrap:wrap; margin:16px 0;}
+    .badge{font-size:12.5px; font-weight:600; padding:4px 11px; border-radius:999px;
+        background:var(--surface-2); color:var(--muted); border:1px solid var(--border);}
+    .badge.remote{background:var(--green-soft); color:var(--green); border-color:transparent;}
+    .badge.salary{background:var(--green-soft); color:var(--green); border-color:transparent;}
+    .badge.score{background:var(--accent-soft); color:var(--accent); border-color:transparent;}
+    .actions{display:flex; gap:10px; flex-wrap:wrap; margin:18px 0 26px;}
+    .track-row{display:flex; gap:12px; align-items:center; flex-wrap:wrap;}
+    label.field{font-size:13px; color:var(--muted); display:flex; flex-direction:column; gap:6px;}
+    label.field .v{font-size:14.5px; color:var(--text);}
+    textarea{width:100%; min-height:120px; resize:vertical; line-height:1.6;}
+    .notes-foot{display:flex; align-items:center; gap:12px; margin-top:12px;}
+    .saved{font-size:13px; color:var(--green); opacity:0; transition:opacity .2s;}
+    .saved.show{opacity:1;}
+    .desc{white-space:pre-wrap; word-wrap:break-word; color:var(--text); font-size:14.5px;}
+    .desc.empty{color:var(--faint); font-style:italic;}
+    #fav-btn.on{color:#f0b849; background:var(--amber-soft); border-color:transparent;}
+    #fav-btn.on svg{fill:currentColor;}
+{% endblock %}
+
+{% block content %}
+    <a class="back-link" href="{% url 'jobs:list' %}{% if back_query %}?{{ back_query }}{% endif %}"><i data-lucide="arrow-left" class="lx"></i> Volver a ofertas</a>
+
+    <div class="head">
+        <div class="avatar {% if not job.company_logo %}noimg{% endif %}">
+            {% if job.company_logo %}<img src="{{ job.company_logo }}" alt="" onerror="this.parentNode.classList.add('noimg');this.remove();">{% endif %}
+            <span class="ini">{{ job.company|first|upper|default:"?" }}</span>
+        </div>
+        <div>
+            <h1>{{ job.title }}</h1>
+            <div class="company-line">
+                <b>{{ job.company|default:"Empresa desconocida" }}</b>
+                {% if job.location %} · {{ job.location }}{% endif %}
+                {% if job.company_industry %} · {{ job.company_industry }}{% endif %}
+                {% if job.company_num_employees %} · {{ job.company_num_employees }} empleados{% endif %}
+            </div>
+        </div>
+    </div>
+
+    <div class="badges">
+        <span class="badge score" title="Match 0–100: afinidad semántica de tu CV con la oferta.">Match {{ job.match_score }}</span>
+        {% if job.is_remote %}<span class="badge remote">Remoto</span>{% endif %}
+        {% if job.site %}<span class="badge">{{ job.site|capfirst }}</span>{% endif %}
+        {% if job.job_type %}<span class="badge">{{ job.job_type }}</span>{% endif %}
+        {% if job.has_salary %}<span class="badge salary"><i data-lucide="banknote" class="lx"></i> {{ job.salary_display }}</span>{% endif %}
+        {% if job.posted_ago %}<span class="badge">Publicada {{ job.posted_ago }}</span>{% endif %}
+    </div>
+
+    <div class="actions">
+        <a class="btn" href="{{ job.job_url }}" target="_blank" rel="noopener">Ver oferta <i data-lucide="external-link"></i></a>
+        {% if job.job_url_direct %}<a class="btn ghost" href="{{ job.job_url_direct }}" target="_blank" rel="noopener">Aplicar directo <i data-lucide="external-link"></i></a>{% endif %}
+        {% if job.company_url %}<a class="btn ghost" href="{{ job.company_url }}" target="_blank" rel="noopener">Web de la empresa <i data-lucide="external-link"></i></a>{% endif %}
+    </div>
+
+    <div class="card">
+        <h2>Seguimiento</h2>
+        <div class="track-row">
+            <label class="field">Estado de postulación
+                <select id="status-select" data-id="{{ job.id }}">
+                    {% for value, label in statuses %}<option value="{{ value }}" {% if value == job.status %}selected{% endif %}>{{ label }}</option>{% endfor %}
+                </select>
+            </label>
+            <button id="fav-btn" class="btn ghost {% if job.is_favorite %}on{% endif %}" data-id="{{ job.id }}"><i data-lucide="star"></i> <span id="fav-label">{% if job.is_favorite %}Favorita{% else %}Marcar favorita{% endif %}</span></button>
+            {% if job.applied_at %}<label class="field">Postulaste el<span class="v">{{ job.applied_at|date:"d M Y, H:i" }}</span></label>{% endif %}
+        </div>
+    </div>
+
+    <div class="card">
+        <h2>Mis notas</h2>
+        <textarea id="notes" data-id="{{ job.id }}" placeholder="Ej: apliqué por referido de Ana · responder el martes · pedían prueba técnica…">{{ job.notes }}</textarea>
+        <div class="notes-foot">
+            <button id="save-notes" class="btn">Guardar notas</button>
+            <span id="saved" class="saved"><i data-lucide="check" class="lx"></i> Guardado</span>
+        </div>
+    </div>
+
+    <div class="card">
+        <h2>Descripción</h2>
+        {% if job.description %}<div class="desc">{{ job.description }}</div>
+        {% else %}<div class="desc empty">Esta bolsa no entregó la descripción. Ábrela con el botón “Ver oferta”.</div>{% endif %}
+    </div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+(function () {
+    const CSRF = "{{ csrf_token }}";
+    async function post(url, body){ return fetch(url, {method:"POST", headers:{"X-CSRFToken":CSRF}, body}); }
+    const sel = document.getElementById("status-select");
+    sel.addEventListener("change", () => { const fd = new FormData(); fd.append("status", sel.value); post(`/job/${sel.dataset.id}/status/`, fd); });
+    const fav = document.getElementById("fav-btn");
+    const favLabel = document.getElementById("fav-label");
+    fav.addEventListener("click", async () => {
+        const r = await post(`/job/${fav.dataset.id}/favorite/`, null); const d = await r.json();
+        if (d.ok) { fav.classList.toggle("on", d.is_favorite); favLabel.textContent = d.is_favorite ? "Favorita" : "Marcar favorita"; }
+    });
+    const notes = document.getElementById("notes"); const saved = document.getElementById("saved");
+    document.getElementById("save-notes").addEventListener("click", async () => {
+        const fd = new FormData(); fd.append("notes", notes.value);
+        const r = await post(`/job/${notes.dataset.id}/notes/`, fd);
+        if ((await r.json()).ok) { saved.classList.add("show"); setTimeout(() => saved.classList.remove("show"), 1800); }
+    });
+})();
+</script>
+{% endblock %}

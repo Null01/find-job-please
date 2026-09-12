@@ -1,0 +1,20 @@
+{% extends "registration/_auth_base.html" %}
+{% block title %}Iniciar sesión · FindJob IA{% endblock %}
+{% block body %}
+    {% if form.errors %}
+        {% include "includes/errors.html" with message="Correo o contraseña incorrectos." %}
+    {% endif %}
+
+    <form method="post" action="{% url 'login' %}">
+        {% csrf_token %}
+        <label for="id_username">Correo</label>
+        <input type="email" name="username" id="id_username" autofocus required
+               value="{{ form.username.value|default:'' }}">
+        <label for="id_password">Contraseña</label>
+        <input type="password" name="password" id="id_password" required>
+        {% if next %}<input type="hidden" name="next" value="{{ next }}">{% endif %}
+        <button class="btn" type="submit">Entrar</button>
+    </form>
+
+    <div class="alt">¿No tienes cuenta? <a href="{% url 'register' %}">Regístrate</a></div>
+{% endblock %}

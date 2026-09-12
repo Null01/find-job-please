@@ -1,0 +1,436 @@
+{% extends "base.html" %}
+{% block title %}Ofertas · FindJob IA{% endblock %}
+{% block extra_head %}
+    .filters{margin-bottom:18px;}
+    .filter-row{display:flex; gap:10px; flex-wrap:wrap; align-items:center;}
+    .search{position:relative; flex:1; min-width:220px;}
+    .search svg{position:absolute; left:13px; top:50%; transform:translateY(-50%);
+        width:17px; height:17px; color:var(--faint);}
+    .search input{width:100%; padding-left:38px;}
+    .filters select{cursor:pointer; padding-right:30px; appearance:none;
+        background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%238a94a6' stroke-width='2.5'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+        background-repeat:no-repeat; background-position:right 10px center;}
+    .adv{display:flex; gap:10px; flex-wrap:wrap; margin-top:10px;}
+    #filters-toggle.on{background:var(--accent-soft); color:var(--accent); border-color:transparent;}
+    .btn.sync-err{background:#fce8e6; color:#d93025; border-color:transparent;}
+
+    .jobs{display:flex; flex-direction:column; gap:6px;}
+    .job{display:flex; align-items:center; gap:11px;
+        background:var(--surface); border:1px solid var(--border); border-left:3px solid var(--border);
+        border-radius:10px; padding:8px 14px; box-shadow:var(--shadow); transition:border-color .15s;}
+    .job:hover{border-color:color-mix(in srgb,var(--accent) 45%,var(--border));}
+    .job[data-status="applied"]{border-left-color:var(--accent);}
+    .job[data-status="interview"]{border-left-color:var(--amber);}
+    .job[data-status="offer"]{border-left-color:var(--green);}
+    .job[data-status="rejected"], .job[data-status="discarded"]{opacity:.6;}
+    .score{width:36px; height:36px; border-radius:9px; display:grid; place-items:center; flex:none;
+        font-weight:700; font-size:14.5px; font-variant-numeric:tabular-nums;
+        background:var(--surface-2); color:var(--faint);}
+    .score.hi{background:var(--green-soft); color:var(--green);}
+    .score.mid{background:var(--amber-soft); color:var(--amber);}
+    .avatar{width:30px; height:30px; border-radius:8px; overflow:hidden; background:var(--surface-2);
+        display:grid; place-items:center; border:1px solid var(--border); flex:none;}
+    .avatar img{width:100%; height:100%; object-fit:contain;}
+    .avatar .ini{display:none; font-weight:700; color:var(--faint); font-size:13px;}
+    .avatar.noimg .ini{display:block;}
+    /* Info principal: una sola línea con elipsis */
+    .job-main{flex:1 1 auto; min-width:0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+    .job-title{font-weight:650; font-size:14.5px; letter-spacing:-.01em; color:var(--text);}
+    .job-main:hover .job-title{color:var(--accent);}
+    .job-meta{color:var(--muted); font-size:12.5px; margin-left:9px;}
+    .job-meta .company{font-weight:600; color:var(--text);}
+    .dot{color:var(--faint); opacity:.6; margin:0 2px;}
+    /* Cluster derecho: badges, links, estado, salario y fecha, todo en línea */
+    .job-side{display:flex; align-items:center; gap:9px; flex:none; white-space:nowrap;}
+    .badges{display:flex; gap:5px; align-items:center;}
+    .job-links{display:flex; gap:7px; align-items:center;}
+    .job-links a{color:var(--faint); display:inline-flex;}
+    .job-links a:hover{color:var(--accent);}
+    .job-links svg{width:16px; height:16px;}
+    .has-notes{color:var(--faint); display:inline-flex;}
+    .has-notes svg{width:16px; height:16px;}
+    .badge{font-size:11px; font-weight:600; padding:2px 8px; border-radius:999px;
+        background:var(--surface-2); color:var(--muted); border:1px solid var(--border); text-transform:capitalize;}
+    .badge.remote{background:var(--green-soft); color:var(--green); border-color:transparent;}
+    .badge[data-site="linkedin"]{background:#e8f0fe; color:#0a66c2; border-color:transparent;}
+    .badge[data-site="indeed"]{background:#eae6ff; color:#4b3fbf; border-color:transparent;}
+    .badge[data-site="glassdoor"]{background:#e2f5ec; color:#0caa41; border-color:transparent;}
+    .badge[data-site="google"]{background:#fce8e6; color:#d93025; border-color:transparent;}
+    .badge[data-site="getonbrd"]{background:#e0f7f4; color:#0a8f80; border-color:transparent;}
+    .badge[data-site="jobicy"]{background:#e9e6fb; color:#5b4bc4; border-color:transparent;}
+    .badge[data-site="torre"]{background:#eef2f6; color:#3a5a78; border-color:transparent;}
+    .badge[data-site="remotive"]{background:#fdeede; color:#c06a12; border-color:transparent;}
+    @media (prefers-color-scheme: dark){
+        .badge[data-site="linkedin"]{background:#12283f; color:#6cb2ff;}
+        .badge[data-site="indeed"]{background:#201d3a; color:#9b8dff;}
+        .badge[data-site="getonbrd"]{background:#0c2724; color:#3fd6c4;}
+        .badge[data-site="jobicy"]{background:#1c1836; color:#a99cff;}
+        .badge[data-site="torre"]{background:#182430; color:#8bb4d6;}
+        .badge[data-site="remotive"]{background:#2a1c0e; color:#f0a95a;}
+    }
+    .track{display:flex; align-items:center; gap:6px;}
+    .star{background:none; border:none; cursor:pointer; line-height:1; color:var(--faint); padding:1px;
+        display:inline-flex; align-items:center;}
+    .star svg{width:18px; height:18px;}
+    .star.on{color:#f0b849;}
+    .star.on svg{fill:currentColor;}
+    .status-select{font:inherit; font-size:12px; font-weight:600; cursor:pointer;
+        padding:4px 24px 4px 10px; border-radius:999px; border:1px solid var(--border);
+        background:var(--surface-2); color:var(--muted); appearance:none;
+        background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%238a94a6' stroke-width='2.5'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+        background-repeat:no-repeat; background-position:right 8px center;}
+    .status-select[data-status="applied"]{background-color:var(--accent-soft); color:var(--accent); border-color:transparent;}
+    .status-select[data-status="interview"]{background-color:var(--amber-soft); color:var(--amber); border-color:transparent;}
+    .status-select[data-status="offer"]{background-color:var(--green-soft); color:var(--green); border-color:transparent;}
+    .salary{font-size:12.5px; font-weight:600; color:var(--green);}
+    .date{font-size:12px; color:var(--faint);}
+
+    .pager{display:flex; gap:14px; align-items:center; justify-content:space-between; flex-wrap:wrap; margin-top:26px;}
+    .pager .info{color:var(--muted); font-size:14px;}
+    .pager .info b{color:var(--text); font-variant-numeric:tabular-nums;}
+    .pages{display:flex; gap:6px; align-items:center;}
+    .pages a, .pages .cur, .pages .gap, .pages .disabled{min-width:36px; height:36px; padding:0 10px;
+        border-radius:9px; display:inline-flex; align-items:center; justify-content:center;
+        font-size:14px; font-variant-numeric:tabular-nums;}
+    .pages a{border:1px solid var(--border); background:var(--surface); color:var(--text); box-shadow:var(--shadow);}
+    .pages a:hover{border-color:var(--accent); color:var(--accent);}
+    .pages .cur{background:var(--accent); color:#fff; font-weight:700;}
+    .pages .gap{color:var(--faint);}
+    .pages .disabled{color:var(--faint); opacity:.45;}
+    .pagesize label{display:flex; align-items:center; gap:8px; font-size:13px; color:var(--muted); margin:0;}
+    .pagesize select{padding:6px 28px 6px 10px; font-size:13px;}
+
+    .empty{text-align:center; padding:70px 20px; color:var(--muted);}
+    .empty .big{margin-bottom:14px; color:var(--faint);}
+    .empty .big svg{width:44px; height:44px;}
+    .empty code{background:var(--surface-2); padding:3px 8px; border-radius:6px; font-size:13px; border:1px solid var(--border);}
+
+    .modal-backdrop{position:fixed; inset:0; z-index:50; display:grid; place-items:center;
+        background:rgba(8,10,14,.55); backdrop-filter:blur(3px); padding:20px;}
+    .modal{position:relative; width:100%; max-width:440px; background:var(--surface);
+        border:1px solid var(--border); border-radius:16px; padding:24px; box-shadow:0 20px 60px rgba(0,0,0,.4);}
+    .modal h3{margin:0 0 4px; font-size:19px; font-family:"Source Serif 4",Georgia,serif;}
+    .modal-sub{color:var(--muted); font-size:13.5px; margin:6px 0 16px;}
+    .modal-close{position:absolute; top:14px; right:14px; border:none; background:none;
+        color:var(--faint); cursor:pointer; line-height:1; display:inline-flex; padding:2px;}
+    .modal-close svg{width:18px; height:18px;}
+    .modal-close:hover{color:var(--text);}
+    .modal h3 svg{width:19px; height:19px; vertical-align:-.18em; margin-right:4px;}
+    .mfield{display:flex; flex-direction:column; gap:6px; font-size:13px; color:var(--muted); margin-bottom:14px;}
+    .mfield input[type=file]{padding:8px; cursor:pointer;}
+    .modal .btn{width:100%; justify-content:center; padding:11px;}
+    .modal-error{background:#fce8e6; color:#b3261e; font-size:13px; padding:9px 12px; border-radius:9px; margin-bottom:12px;}
+    .cv-actions{display:flex; flex-direction:column; gap:10px; margin-top:4px;}
+    .cv-success{color:var(--green); font-weight:600; font-size:14px;}
+    .kw-list{display:flex; flex-wrap:wrap; gap:7px; margin-top:10px;}
+    .kw{font-size:12.5px; font-weight:600; padding:4px 11px; border-radius:999px; background:var(--accent-soft); color:var(--accent);}
+
+    @media (max-width:640px){
+        .job{flex-wrap:wrap;}
+        .job-side{flex-basis:100%; justify-content:flex-start; gap:10px; padding-left:47px;}
+        .badges{justify-content:flex-start;}
+    }
+{% endblock %}
+
+{% block content %}
+<div class="page-head">
+    <div>
+        <h1>Ofertas</h1>
+        <div class="kpis">
+            <span class="stat"><b>{{ total }}</b> ofertas</span>
+            <span class="stat"><b>{{ remote_count }}</b> remotas</span>
+            <span class="stat"><b>{{ applied_count }}</b> postuladas</span>
+        </div>
+    </div>
+    <div class="head-actions">
+        <button id="cv-btn" class="btn soft" type="button" title="Subir tu CV para personalizar el match"><i data-lucide="file-text"></i> Subir CV</button>
+        <button id="sync-btn" class="btn green {% if sync.error %}sync-err{% endif %}" type="button"
+                {% if has_cv %}title="{{ sync.message }}"{% else %}disabled title="Sube tu CV primero para poder sincronizar"{% endif %}>
+            <span id="sync-icon"><i data-lucide="refresh-cw"></i></span> <span id="sync-label">Sincronizar</span>
+        </button>
+    </div>
+</div>
+
+<form class="filters" method="get">
+    <input type="hidden" name="per_page" value="{{ per_page }}">
+    <div class="filter-row">
+        <div class="search">
+            <i data-lucide="search"></i>
+            <input type="search" name="q" value="{{ q }}" placeholder="Buscar por título, empresa, ubicación o stack…">
+        </div>
+        <button class="btn" type="submit">Buscar</button>
+        <button class="btn ghost {% if site or remote or status %}on{% endif %}" type="button" id="filters-toggle">
+            <i data-lucide="sliders-horizontal"></i> Filtros{% if site or remote or status %} •{% endif %}
+        </button>
+        <a class="btn ghost" href="{% url 'jobs:list' %}">Limpiar</a>
+    </div>
+    <div class="adv" id="adv" {% if not site and not remote and not status %}hidden{% endif %}>
+        <select name="site">
+            <option value="">Todas las bolsas</option>
+            {% for s in sites %}<option value="{{ s }}" {% if s == site %}selected{% endif %}>{{ s|capfirst }}</option>{% endfor %}
+        </select>
+        <select name="remote">
+            <option value="">Remoto o no</option>
+            <option value="1" {% if remote == "1" %}selected{% endif %}>Solo remoto</option>
+        </select>
+        <select name="status">
+            <option value="">Todos los estados</option>
+            {% for value, label in statuses %}<option value="{{ value }}" {% if value == status %}selected{% endif %}>{{ label }}</option>{% endfor %}
+        </select>
+    </div>
+</form>
+
+{% if page_obj.object_list %}
+<div class="jobs">
+    {% for job in page_obj.object_list %}
+    <article class="job" data-status="{{ job.status }}">
+        <div class="score {% if job.match_score >= 70 %}hi{% elif job.match_score >= 40 %}mid{% endif %}"
+             title="Match 0–100: afinidad semántica de tu CV con la oferta.">{{ job.match_score }}</div>
+        <div class="avatar {% if not job.company_logo %}noimg{% endif %}">
+            {% if job.company_logo %}<img src="{{ job.company_logo }}" alt="" loading="lazy"
+                 onerror="this.parentNode.classList.add('noimg');this.remove();">{% endif %}
+            <span class="ini">{{ job.company|first|upper|default:"?" }}</span>
+        </div>
+        <a class="job-main" href="{% url 'jobs:detail' job.id %}{% if list_query %}?{{ list_query }}{% endif %}">
+            <span class="job-title">{{ job.title }}</span><span class="job-meta">{% if job.company %}<span class="company">{{ job.company }}</span>{% endif %}{% if job.location %}<span class="dot">·</span>{{ job.location }}{% endif %}{% if job.company_industry %}<span class="dot">·</span>{{ job.company_industry }}{% endif %}</span>
+        </a>
+        <div class="job-side">
+            <div class="badges">
+                {% if job.is_remote %}<span class="badge remote">remoto</span>{% endif %}
+                {% if job.site %}<span class="badge" data-site="{{ job.site }}">{{ job.site }}</span>{% endif %}
+            </div>
+            <div class="job-links">
+                <a href="{{ job.job_url }}" target="_blank" rel="noopener" title="Ver oferta"><i data-lucide="external-link"></i></a>
+                {% if job.job_url_direct %}<a href="{{ job.job_url_direct }}" target="_blank" rel="noopener" title="Aplicar directo"><i data-lucide="square-arrow-out-up-right"></i></a>{% endif %}
+                {% if job.notes %}<span class="has-notes" title="Tiene notas"><i data-lucide="sticky-note"></i></span>{% endif %}
+            </div>
+            <div class="track">
+                <button class="star {% if job.is_favorite %}on{% endif %}" data-id="{{ job.id }}" title="Favorita"><i data-lucide="star"></i></button>
+                <select class="status-select" data-id="{{ job.id }}" data-status="{{ job.status }}">
+                    {% for value, label in statuses %}<option value="{{ value }}" {% if value == job.status %}selected{% endif %}>{{ label }}</option>{% endfor %}
+                </select>
+            </div>
+            {% if job.has_salary %}<span class="salary">{{ job.salary_display }}</span>{% endif %}
+            {% if job.posted_ago %}<span class="date" title="{{ job.date_posted|date:'d M Y' }}">{{ job.posted_ago }}</span>{% endif %}
+        </div>
+    </article>
+    {% endfor %}
+</div>
+
+<div class="pager">
+    <span class="info">Mostrando <b>{{ page_obj.start_index }}–{{ page_obj.end_index }}</b> de <b>{{ total }}</b> ofertas</span>
+    <div class="pages">
+        {% if page_obj.has_previous %}<a href="?{% if querystring %}{{ querystring }}&{% endif %}page={{ page_obj.previous_page_number }}"><i data-lucide="chevron-left"></i></a>{% else %}<span class="disabled"><i data-lucide="chevron-left"></i></span>{% endif %}
+        {% for num in page_range %}
+            {% if num == page_obj.paginator.ELLIPSIS %}<span class="gap">…</span>
+            {% elif num == page_obj.number %}<span class="cur">{{ num }}</span>
+            {% else %}<a href="?{% if querystring %}{{ querystring }}&{% endif %}page={{ num }}">{{ num }}</a>{% endif %}
+        {% endfor %}
+        {% if page_obj.has_next %}<a href="?{% if querystring %}{{ querystring }}&{% endif %}page={{ page_obj.next_page_number }}"><i data-lucide="chevron-right"></i></a>{% else %}<span class="disabled"><i data-lucide="chevron-right"></i></span>{% endif %}
+    </div>
+    <form class="pagesize" method="get">
+        {% if q %}<input type="hidden" name="q" value="{{ q }}">{% endif %}
+        {% if site %}<input type="hidden" name="site" value="{{ site }}">{% endif %}
+        {% if remote %}<input type="hidden" name="remote" value="{{ remote }}">{% endif %}
+        {% if status %}<input type="hidden" name="status" value="{{ status }}">{% endif %}
+        <label>Por página
+            <select name="per_page" onchange="this.form.submit()">
+                {% for size in page_sizes %}<option value="{{ size }}" {% if size == per_page %}selected{% endif %}>{{ size }}</option>{% endfor %}
+            </select>
+        </label>
+    </form>
+</div>
+{% else %}
+<div class="empty">
+    {% if not has_cv %}
+        <div class="big"><i data-lucide="file-text"></i></div><b>Sube tu CV para empezar.</b><br>
+        Personaliza el match y desbloquea la sincronización.<br><br>
+        <button class="btn" type="button" onclick="document.getElementById('cv-btn').click()"><i data-lucide="file-text"></i> Subir CV</button>
+    {% elif owner_job_count == 0 %}
+        <div class="big"><i data-lucide="refresh-cw"></i></div><b>Aún no tienes ofertas.</b><br>
+        Pulsa <b>Sincronizar</b> arriba para traerlas.
+    {% else %}
+        <div class="big"><i data-lucide="search-x"></i></div>No hay ofertas que coincidan con el filtro.
+    {% endif %}
+</div>
+{% endif %}
+
+<!-- Modal: subir CV -->
+<div id="cv-modal" class="modal-backdrop" hidden>
+    <div class="modal">
+        <button class="modal-close" id="cv-close" title="Cerrar"><i data-lucide="x"></i></button>
+        <h3><i data-lucide="file-text"></i>Subir CV</h3>
+        <div id="cv-step-upload">
+            <p class="modal-sub">Sube tu CV en PDF. Se guarda en tu cuenta y personaliza el match.</p>
+            <form id="cv-form">
+                <label class="mfield">Archivo PDF
+                    <input type="file" id="cv-file" accept="application/pdf,.pdf" required>
+                </label>
+                <div id="cv-error" class="modal-error" hidden></div>
+                <button class="btn" type="submit">Subir CV</button>
+            </form>
+        </div>
+        <div id="cv-step-done" hidden>
+            <div class="cv-success"><i data-lucide="check" class="lx"></i> CV subido: <b id="cv-done-name"></b></div>
+            <p class="modal-sub" id="cv-done-msg"></p>
+            <div class="cv-actions">
+                <button id="cv-analyze" class="btn ghost"><i data-lucide="sparkles"></i> Analizar documento</button>
+                <button id="cv-view" class="btn" hidden>Ver mis ofertas <i data-lucide="arrow-right"></i></button>
+                <button id="cv-sync" class="btn" hidden><i data-lucide="refresh-cw"></i> Sincronizar desde cero</button>
+            </div>
+            <div id="cv-keywords" hidden>
+                <div class="modal-sub" style="margin-top:16px">Palabras clave detectadas:</div>
+                <div id="cv-kw-list" class="kw-list"></div>
+                <div class="cv-success" id="cv-rescored" style="margin-top:12px"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Overlay bloqueante -->
+<div id="blocker" class="blocker" hidden>
+    <div class="blocker-box"><span class="spinner big"></span><span id="blocker-text">Procesando…</span></div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+(function () {
+    const CSRF = "{{ csrf_token }}";
+    const btn = document.getElementById("sync-btn");
+    const icon = document.getElementById("sync-icon");
+    const label = document.getElementById("sync-label");
+    let polling = false;
+
+    // Filtros colapsables
+    const advToggle = document.getElementById("filters-toggle");
+    const adv = document.getElementById("adv");
+    if (advToggle) advToggle.addEventListener("click", () => {
+        adv.hidden = !adv.hidden;
+        advToggle.classList.toggle("on", !adv.hidden);
+    });
+
+    function setRunning(on){ btn.disabled = on;
+        label.textContent = on ? "Sincronizando…" : "Sincronizar";
+        icon.innerHTML = on ? '<span class="spinner"></span>' : '<i data-lucide="refresh-cw"></i>';
+        if (!on && window.lucide) lucide.createIcons(); }
+    function render(status){ btn.title = status.message || "";
+        btn.classList.toggle("sync-err", !!status.error); }
+
+    const blocker = document.getElementById("blocker");
+    const blockerText = document.getElementById("blocker-text");
+    function showBlocker(t){ blockerText.textContent = t; blocker.hidden = false; }
+    function hideBlocker(){ blocker.hidden = true; }
+
+    async function poll(){
+        if (polling) return; polling = true;
+        setRunning(true); showBlocker("Sincronizando ofertas… puede tardar 1–2 min.");
+        while (true) {
+            await new Promise(r => setTimeout(r, 3000));
+            let status;
+            try { status = await (await fetch("{% url 'jobs:sync_status' %}")).json(); } catch (e) { continue; }
+            render(status);
+            if (!status.running) {
+                setRunning(false); polling = false;
+                if (status.error) hideBlocker(); else setTimeout(() => location.reload(), 800);
+                break;
+            }
+        }
+    }
+
+    async function startSync(){
+        setRunning(true); showBlocker("Sincronizando ofertas… puede tardar 1–2 min.");
+        let data;
+        try {
+            const res = await fetch("{% url 'jobs:sync' %}", {method:"POST", headers:{"X-CSRFToken":CSRF}});
+            data = await res.json(); render(data);
+        } catch (e) {
+            render({message:"No se pudo iniciar la sincronización.", error:true});
+            setRunning(false); hideBlocker(); return;
+        }
+        if (data && data.running === false && data.started === undefined) { setRunning(false); hideBlocker(); return; }
+        poll();
+    }
+    if (btn) btn.addEventListener("click", startSync);
+
+    // Estado y favoritos
+    document.querySelectorAll(".status-select").forEach(sel => {
+        sel.addEventListener("change", async () => {
+            const fd = new FormData(); fd.append("status", sel.value);
+            try {
+                const r = await fetch(`/job/${sel.dataset.id}/status/`, {method:"POST", headers:{"X-CSRFToken":CSRF}, body:fd});
+                const d = await r.json();
+                if (d.ok) { sel.dataset.status = d.status; const c = sel.closest(".job"); if (c) c.dataset.status = d.status; }
+            } catch (e) {}
+        });
+    });
+    document.querySelectorAll(".star").forEach(star => {
+        star.addEventListener("click", async () => {
+            try {
+                const r = await fetch(`/job/${star.dataset.id}/favorite/`, {method:"POST", headers:{"X-CSRFToken":CSRF}});
+                const d = await r.json();
+                if (d.ok) { star.classList.toggle("on", d.is_favorite); }
+            } catch (e) {}
+        });
+    });
+
+    // Subir CV
+    const modal = document.getElementById("cv-modal");
+    const cvForm = document.getElementById("cv-form");
+    const cvError = document.getElementById("cv-error");
+    const stepUpload = document.getElementById("cv-step-upload");
+    const stepDone = document.getElementById("cv-step-done");
+    const analyzeBtn = document.getElementById("cv-analyze");
+    const kwWrap = document.getElementById("cv-keywords");
+    const doneMsg = document.getElementById("cv-done-msg");
+    const cvView = document.getElementById("cv-view");
+    const cvSync = document.getElementById("cv-sync");
+    let currentCvId = null;
+
+    document.getElementById("cv-btn").addEventListener("click", () => { modal.hidden = false; });
+    document.getElementById("cv-close").addEventListener("click", () => { modal.hidden = true; });
+    modal.addEventListener("click", (e) => { if (e.target === modal) modal.hidden = true; });
+
+    cvForm.addEventListener("submit", async (e) => {
+        e.preventDefault(); cvError.hidden = true;
+        const file = document.getElementById("cv-file").files[0];
+        const fd = new FormData(); fd.append("file", file);
+        showBlocker("Subiendo CV…");
+        try {
+            const r = await fetch("{% url 'jobs:upload_cv' %}", {method:"POST", headers:{"X-CSRFToken":CSRF}, body:fd});
+            const d = await r.json();
+            if (!d.ok) throw new Error(d.error || "No se pudo subir el CV.");
+            currentCvId = d.id;
+            document.getElementById("cv-done-name").textContent = d.filename + " · " + d.email;
+            if (d.existing) { doneMsg.textContent = `Este correo ya tiene ${d.job_count} ofertas guardadas.`; cvView.hidden = false; cvSync.hidden = true; }
+            else { doneMsg.textContent = "Aún no tienes ofertas. Analiza tu CV y sincroniza desde cero."; cvView.hidden = true; cvSync.hidden = false; }
+            stepUpload.hidden = true; stepDone.hidden = false;
+        } catch (err) { cvError.textContent = err.message; cvError.hidden = false; }
+        finally { hideBlocker(); }
+    });
+
+    cvView.addEventListener("click", () => { location.reload(); });
+    cvSync.addEventListener("click", () => { modal.hidden = true; startSync(); });
+
+    analyzeBtn.addEventListener("click", async () => {
+        analyzeBtn.disabled = true;
+        showBlocker("Analizando CV y calculando match… puede tardar un momento.");
+        try {
+            const r = await fetch(`/cv/${currentCvId}/analyze/`, {method:"POST", headers:{"X-CSRFToken":CSRF}});
+            const d = await r.json();
+            if (!d.ok) throw new Error(d.error || "No se pudo analizar el CV.");
+            const list = document.getElementById("cv-kw-list"); list.innerHTML = "";
+            d.keywords.forEach(k => { const s = document.createElement("span"); s.className = "kw"; s.textContent = k; list.appendChild(s); });
+            kwWrap.hidden = false;
+            const box = document.getElementById("cv-rescored");
+            if (d.rescored > 0) { box.innerHTML = `<i data-lucide="check" class="lx"></i> Match recalculado en ${d.rescored} ofertas. Actualizando…`; setTimeout(() => location.reload(), 2600); }
+            else { box.innerHTML = '<i data-lucide="check" class="lx"></i> Palabras clave guardadas. Sincroniza para traer ofertas.'; }
+            if (window.lucide) lucide.createIcons();
+        } catch (err) { alert(err.message); analyzeBtn.disabled = false; }
+        finally { hideBlocker(); }
+    });
+
+    {% if sync.running %}poll();{% endif %}
+})();
+</script>
+{% endblock %}

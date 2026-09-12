@@ -1,0 +1,104 @@
+{% extends "registration/_auth_base.html" %}
+{% load form_extras %}
+{% block title %}Crear cuenta · FindJob IA{% endblock %}
+{% block extra_head %}
+<style>
+    .pw-meter{margin-top:8px;}
+    .pw-bar{height:6px; border-radius:999px; background:var(--surface-2);
+        overflow:hidden; border:1px solid var(--border);}
+    .pw-bar > div{height:100%; width:0; border-radius:999px; transition:width .2s, background .2s;}
+    .pw-label{font-size:12px; font-weight:600; margin-top:5px;}
+    .pw-hint{font-size:11.5px; color:var(--faint); margin-top:3px;}
+</style>
+{% endblock %}
+{% block body %}
+    <h1>Crear cuenta</h1>
+    <p class="sub">Regístrate para guardar tu CV y tus ofertas.</p>
+
+    {% form_errors form as errs %}
+    {% include "includes/errors.html" with errors=errs %}
+
+    <form method="post" action="{% url 'register' %}">
+        {% csrf_token %}
+        <label for="id_email">Correo</label>
+        <input type="email" name="email" id="id_email" autofocus required
+               value="{{ form.email.value|default:'' }}">
+
+        <label for="id_password1">Contraseña</label>
+        <input type="password" name="password1" id="id_password1" required>
+        <div id="pw-meter" class="pw-meter" hidden>
+            <div class="pw-bar"><div id="pw-fill"></div></div>
+            <div id="pw-label" class="pw-label"></div>
+            <div id="pw-hint" class="pw-hint"></div>
+        </div>
+
+        <label for="id_password2">Repite la contraseña</label>
+        <input type="password" name="password2" id="id_password2" required>
+
+        <button class="btn" type="submit">Crear cuenta</button>
+    </form>
+
+    <div class="alt">¿Ya tienes cuenta? <a href="{% url 'login' %}">Inicia sesión</a></div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/zxcvbn/4.4.2/zxcvbn.js"></script>
+    <script>
+    (function () {
+        const pw = document.getElementById("id_password1");
+        const meter = document.getElementById("pw-meter");
+        const fill = document.getElementById("pw-fill");
+        const label = document.getElementById("pw-label");
+        const hint = document.getElementById("pw-hint");
+        const LABELS = ["Muy débil", "Débil", "Media", "Fuerte", "Muy fuerte"];
+        const COLORS = ["#d93025", "#e8710a", "#b7791f", "#159a63", "#0b8a4c"];
+
+        // Traducción de las advertencias más comunes de zxcvbn.
+        const WARN = {
+            "This is a top-10 common password": "Es una de las 10 contraseñas más comunes.",
+            "This is a top-100 common password": "Es una de las 100 contraseñas más comunes.",
+            "This is a very common password": "Es una contraseña muy común.",
+            "This is similar to a commonly used password": "Se parece a una contraseña muy común.",
+            "A word by itself is easy to guess": "Una sola palabra es fácil de adivinar.",
+            "Names and surnames by themselves are easy to guess": "Nombres y apellidos solos son fáciles de adivinar.",
+            "Common names and surnames are easy to guess": "Nombres y apellidos comunes son fáciles de adivinar.",
+            "Straight rows of keys are easy to guess": "Filas seguidas del teclado son fáciles de adivinar.",
+            "Short keyboard patterns are easy to guess": "Patrones cortos de teclado son fáciles de adivinar.",
+            "Repeats like \"aaa\" are easy to guess": "Repeticiones como \"aaa\" son fáciles de adivinar.",
+            "Repeats like \"abcabcabc\" are only slightly harder to guess than \"abc\"": "Repeticiones como \"abcabc\" son casi tan fáciles como \"abc\".",
+            "Sequences like abc or 6543 are easy to guess": "Secuencias como abc o 6543 son fáciles de adivinar.",
+            "Recent years are easy to guess": "Los años recientes son fáciles de adivinar.",
+            "Dates are often easy to guess": "Las fechas suelen ser fáciles de adivinar.",
+        };
+
+        // Estimador de respaldo si zxcvbn no cargó (sin internet).
+        function fallbackScore(v) {
+            let s = 0;
+            if (v.length >= 8) s++;
+            if (/[a-z]/.test(v) && /[A-Z]/.test(v)) s++;
+            if (/\d/.test(v)) s++;
+            if (/[^A-Za-z0-9]/.test(v)) s++;
+            return Math.max(0, Math.min(s - (v.length < 8 ? 1 : 0), 4));
+        }
+
+        pw.addEventListener("input", function () {
+            const v = pw.value;
+            if (!v) { meter.hidden = true; return; }
+            meter.hidden = false;
+
+            let score, warning = "";
+            if (window.zxcvbn) {
+                const r = zxcvbn(v);
+                score = r.score;
+                warning = (r.feedback && r.feedback.warning) || "";
+            } else {
+                score = fallbackScore(v);
+            }
+
+            fill.style.width = ((score + 1) / 5 * 100) + "%";
+            fill.style.background = COLORS[score];
+            label.textContent = "Seguridad: " + LABELS[score];
+            label.style.color = COLORS[score];
+            hint.textContent = WARN[warning] || (warning ? warning : "");
+        });
+    })();
+    </script>
+{% endblock %}

@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Sincronización automática diaria (launchd, nativo de macOS).
+  Corre `manage.py sync_jobs` dentro del contenedor web todos los días a las 9:00.
+  Requiere que el stack esté levantado (docker compose up -d); como los servicios
+  usan restart: unless-stopped, se mantienen arriba tras reiniciar el equipo.
+
+  INSTALAR:
+    cp com.andres.findjob.plist ~/Library/LaunchAgents/
+    launchctl load ~/Library/LaunchAgents/com.andres.findjob.plist
+
+  QUITAR:
+    launchctl unload ~/Library/LaunchAgents/com.andres.findjob.plist
+
+  PROBAR YA:
+    launchctl start com.andres.findjob
+-->
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>com.andres.findjob</string>
+
+    <key>ProgramArguments</key>
+    <array>
+        <string>/bin/sh</string>
+        <string>-c</string>
+        <string>cd /Users/andres-duran/Development/git/labs/find-job-AI &amp;&amp; /usr/local/bin/docker compose exec -T web python manage.py sync_jobs</string>
+    </array>
+
+    <key>StartCalendarInterval</key>
+    <dict>
+        <key>Hour</key>
+        <integer>9</integer>
+        <key>Minute</key>
+        <integer>0</integer>
+    </dict>
+
+    <key>StandardOutPath</key>
+    <string>/Users/andres-duran/Development/git/labs/find-job-AI/logs/sync.out.log</string>
+    <key>StandardErrorPath</key>
+    <string>/Users/andres-duran/Development/git/labs/find-job-AI/logs/sync.err.log</string>
+</dict>
+</plist>
