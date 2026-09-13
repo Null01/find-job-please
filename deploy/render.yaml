@@ -1,0 +1,45 @@
+# Blueprint de Render (infra como código).
+# Este archivo NO está en la raíz: al importar (Render → New → Blueprint) hay que
+# indicar la ruta en el campo "Blueprint Path" = deploy/render.yaml
+# Nota: dockerfilePath y dockerContext son relativos a la RAÍZ del repo, no a esta carpeta.
+# Los valores `sync: false` son SECRETOS: se rellenan en el panel de Render,
+# nunca en este archivo (por eso no llevan `value`).
+services:
+  - type: web
+    name: find-job-please
+    runtime: docker
+    repo: https://github.com/Null01/find-job-please
+    branch: main
+    dockerfilePath: ./web/Dockerfile
+    dockerContext: ./web
+    plan: free
+    healthCheckPath: /login/
+    # Aplica migraciones antes de mandar tráfico a la versión nueva.
+    preDeployCommand: python manage.py migrate --noinput
+    envVars:
+      # --- No secretos (pueden vivir en el repo) ---
+      - key: DJANGO_DEBUG
+        value: "0"
+      - key: DB_SSL_REQUIRE
+        value: "1"
+      - key: BUSINESS_RANKER_STRATEGY   # keyword: liviano, no descarga el modelo de 1GB
+        value: keyword
+      - key: R2_REGION
+        value: auto
+      # --- Secretos: se definen en el panel de Render (Environment) ---
+      - key: DJANGO_SECRET_KEY
+        sync: false
+      - key: DJANGO_ALLOWED_HOSTS        # p. ej. find-job-please.onrender.com
+        sync: false
+      - key: DJANGO_CSRF_TRUSTED_ORIGINS # p. ej. https://find-job-please.onrender.com
+        sync: false
+      - key: DATABASE_URL                # de Supabase (Session pooler, 5432)
+        sync: false
+      - key: R2_BUCKET
+        sync: false
+      - key: R2_ACCESS_KEY_ID
+        sync: false
+      - key: R2_SECRET_ACCESS_KEY
+        sync: false
+      - key: R2_ENDPOINT_URL             # https://<account_id>.r2.cloudflarestorage.com
+        sync: false

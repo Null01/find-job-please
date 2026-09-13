@@ -36,10 +36,10 @@ class EmbeddingsRanker(BaseRanker):
 
     def __init__(self):
         self.model_name = os.environ.get(
-            "EMBEDDING_MODEL", "intfloat/multilingual-e5-base"
+            "BUSINESS_EMBEDDING_MODEL", "intfloat/multilingual-e5-base"
         )
-        self.sem_w = float(os.environ.get("RANK_SEM_WEIGHT", "0.8"))
-        self.lex_w = float(os.environ.get("RANK_LEX_WEIGHT", "0.2"))
+        self.sem_w = float(os.environ.get("BUSINESS_RANK_SEM_WEIGHT", "0.8"))
+        self.lex_w = float(os.environ.get("BUSINESS_RANK_LEX_WEIGHT", "0.2"))
 
     def rank(self, owner) -> int:
         import numpy as np

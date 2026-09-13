@@ -273,7 +273,9 @@ def analyze_cv(request, pk):
 
     cv = get_object_or_404(CV, pk=pk, owner=_current_owner(request))
     try:
-        text = cv_service.extract_text(cv.file.path)
+        # Lee como stream (funciona con disco local y con object storage R2/S3).
+        with cv.file.open("rb") as fh:
+            text = cv_service.extract_text(fh)
     except Exception as e:  # noqa: BLE001
         return JsonResponse({"ok": False, "error": f"No se pudo leer el PDF: {e}"}, status=400)
 

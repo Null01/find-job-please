@@ -1,6 +1,9 @@
 Django>=5.1,<5.2
 psycopg[binary]>=3.2
+dj-database-url>=2.2       # parseo de DATABASE_URL para BD remota (Supabase)
 gunicorn>=23.0
+whitenoise>=6.7            # sirve estáticos en prod sin nginx
+django-storages[s3]>=1.14  # media (CVs) en Cloudflare R2 (S3-compatible)
 pandas>=2.2
 python-jobspy>=1.1.80
 pypdf>=5.1

@@ -27,12 +27,19 @@ services:
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
       POSTGRES_HOST: db
       POSTGRES_PORT: 5432
+      # BD remota (Supabase). Si DATABASE_URL está definida, la app la usa e
+      # IGNORA los POSTGRES_* de arriba. Inyéctala con Infisical o el entorno del
+      # host (nunca commitees el valor). Vacía por defecto → usa el Postgres local.
+      DATABASE_URL: ${DATABASE_URL:-}
+      DB_SSL_REQUIRE: ${DB_SSL_REQUIRE:-1}
+      DB_POOLER_MODE: ${DB_POOLER_MODE:-}
       DJANGO_SECRET_KEY: ${DJANGO_SECRET_KEY}
       DJANGO_DEBUG: ${DJANGO_DEBUG}
       DJANGO_ALLOWED_HOSTS: ${DJANGO_ALLOWED_HOSTS}
-      # Ranking: "embeddings" (local, por defecto) o "keyword"
-      RANKER_STRATEGY: ${RANKER_STRATEGY:-embeddings}
-      EMBEDDING_MODEL: ${EMBEDDING_MODEL:-intfloat/multilingual-e5-base}
+      # Config de NEGOCIO (prefijo BUSINESS_*): ranking del match.
+      # "embeddings" (local, por defecto) o "keyword".
+      BUSINESS_RANKER_STRATEGY: ${BUSINESS_RANKER_STRATEGY:-embeddings}
+      BUSINESS_EMBEDDING_MODEL: ${BUSINESS_EMBEDDING_MODEL:-intfloat/multilingual-e5-base}
     volumes:
       - ./web:/app                      # código en vivo (auto-reload)
       - hf_cache:/root/.cache/huggingface  # cache de modelos (persistente)

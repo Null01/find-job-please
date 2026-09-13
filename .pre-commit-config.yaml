@@ -1,0 +1,39 @@
+# Hooks de pre-commit para prevenir fugas de secretos y datos privados.
+# Instalar una vez:  pre-commit install
+# Ejecutar a demanda: pre-commit run --all-files
+# Saltar (emergencia): git commit --no-verify   (evítalo)
+#
+# Esto es la capa LOCAL (feedback inmediato antes de commitear).
+# El backstop en el servidor está en .github/workflows/secret-scan.yml.
+
+repos:
+  # --- Detección de secretos con gitleaks (usa el binario ya instalado) ---
+  - repo: local
+    hooks:
+      - id: gitleaks
+        name: gitleaks · detecta secretos en lo que vas a commitear
+        entry: gitleaks git --staged --redact --verbose
+        language: system
+        pass_filenames: false
+
+  # --- Guardián: ningún archivo .env debe versionarse (permite plantillas) ---
+  - repo: local
+    hooks:
+      - id: no-env-files
+        name: bloquea archivos .env versionados
+        entry: "No versiones archivos .env (usa .env.example). Si ya se subió, ROTA las credenciales."
+        language: fail
+        files: '(^|/)\.env(\.[^/]+)?$'
+        exclude: '(^|/)\.env\.(example|sample|template)$'
+
+  # --- Salvaguardas básicas anti-fuga / anti-error ---
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v5.0.0
+    hooks:
+      - id: detect-private-key          # bloquea claves privadas (RSA/EC/OpenSSH/PGP)
+      - id: check-added-large-files      # evita subir binarios pesados (CVs, dumps)
+        args: ["--maxkb=1024"]
+      - id: check-merge-conflict         # marcadores <<<<<<< sin resolver
+      - id: check-case-conflict          # colisiones de nombre en FS case-insensitive
+      - id: end-of-file-fixer            # archivo termina en una sola newline
+      - id: trailing-whitespace          # limpia espacios al final de línea

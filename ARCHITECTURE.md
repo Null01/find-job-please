@@ -320,7 +320,7 @@ sequenceDiagram
 ## Estructura del proyecto
 
 ```
-find-job-AI/
+find-job-please/
 ├── docker-compose.yml          db (Postgres) + web (Django)
 ├── com.andres.findjob.plist    sync programado (launchd)
 └── web/

@@ -11,7 +11,28 @@ postulaciones y **sincronizar con un botón**.
 > **Cómo correr la app.** Requisito único: tener **Docker Desktop instalado y
 > abierto**. No necesitas Python ni nada más: todo corre en contenedores.
 
-Desde la raíz del proyecto (`find-job-AI/`):
+### Levantar en local vs remoto
+
+**Local** — Postgres en un contenedor (todo en Docker, sin dependencias externas):
+
+```bash
+cp .env.example .env          # rellena POSTGRES_* y DJANGO_SECRET_KEY
+docker compose up --build -d  # app en http://localhost:8000/
+```
+
+**Remoto** — BD gestionada (Supabase) con los secretos inyectados por Infisical:
+
+```bash
+# DATABASE_URL (de Supabase) vive en Infisical, no en el repo.
+# Si está definida, la app la usa (con TLS) e IGNORA el Postgres local.
+infisical run --env=prod -- docker compose up -d
+```
+
+Guía completa de producción (Supabase + Infisical + rotación) en **[DEPLOY.md](DEPLOY.md)**.
+
+---
+
+Desde la raíz del proyecto (`find-job-please/`):
 
 ```bash
 docker compose up --build -d
@@ -32,6 +53,34 @@ docker compose logs -f web     # ver logs de la app
 docker compose down            # parar todo (los datos persisten en el volumen pgdata)
 docker compose up -d           # volver a levantar (sin --build si no cambió el Dockerfile)
 ```
+
+### Desarrollo: hooks de seguridad (pre-commit)
+
+Este repo usa [pre-commit](https://pre-commit.com) + [gitleaks](https://github.com/gitleaks/gitleaks)
+para evitar subir secretos por error. **Tras clonar el repo, córrelo una vez:**
+
+```bash
+pre-commit install
+```
+
+Requisitos: tener `pre-commit` y `gitleaks` instalados (en macOS: `brew install pre-commit gitleaks`).
+Desde entonces, cada `git commit` escanea lo que vas a subir y **bloquea** secretos y archivos
+`.env`. Para un escaneo manual: `pre-commit run --all-files`.
+
+Antes de arrancar, copia la plantilla de entorno y rellena tus valores (el `.env` real está en
+`.gitignore` y **nunca** debe commitearse):
+
+```bash
+cp .env.example .env
+```
+
+Como red de seguridad, el workflow `.github/workflows/secret-scan.yml` repite el escaneo en
+GitHub Actions, así que la protección aplica aunque alguien no tenga los hooks locales.
+
+**Convención de variables:** todos los secretos/config llevan **prefijo de espacio de nombres**
+(`POSTGRES_*`, `DJANGO_*`, `DB_*`, `DATABASE_URL`) y **la configuración de negocio empieza por
+`BUSINESS_*`** (p. ej. `BUSINESS_RANKER_STRATEGY`, `BUSINESS_EMBEDDING_MODEL`). Facilita
+agruparlos y escanearlos en el gestor de secretos.
 
 ## Sincronizar ofertas
 
@@ -112,11 +161,11 @@ seguimiento (estado, favoritos, notas).
 ### Ranking del match (conectable)
 
 El puntaje de match (0–100) lo calcula una estrategia **conectable** vía la
-variable `RANKER_STRATEGY` en `.env` (cambiar y reiniciar el web):
+variable `BUSINESS_RANKER_STRATEGY` en `.env` (cambiar y reiniciar el web):
 
 - **`embeddings`** (por defecto) — **semántico local, offline, sin API key**.
   Usa un bi-encoder multilingüe (E5) + señal léxica (híbrido denso-sparse) y
-  cachea el vector de cada oferta. Modelo configurable con `EMBEDDING_MODEL`
+  cachea el vector de cada oferta. Modelo configurable con `BUSINESS_EMBEDDING_MODEL`
   (`intfloat/multilingual-e5-base` por defecto; `...-e5-large` para más calidad).
 - **`keyword`** — léxico simple (cuenta keywords del CV). Rápido, sin modelos.
 

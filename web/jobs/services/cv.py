@@ -38,11 +38,16 @@ SKILL_VOCAB = [
 ]
 
 
-def extract_text(path: str) -> str:
-    """Extrae el texto de un PDF con pypdf."""
+def extract_text(source) -> str:
+    """Extrae el texto de un PDF con pypdf.
+
+    `source` puede ser una ruta local (str) o un objeto tipo archivo (stream).
+    Aceptar un stream permite leer desde object storage (R2/S3), donde no hay
+    ruta local en disco.
+    """
     from pypdf import PdfReader
 
-    reader = PdfReader(path)
+    reader = PdfReader(source)
     return "\n".join((page.extract_text() or "") for page in reader.pages)
 
 

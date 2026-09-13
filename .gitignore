@@ -7,6 +7,9 @@ __pycache__/
 .env
 .env.*
 *.pem
+!.env.example
+!.env.sample
+!.env.template
 
 # Datos privados
 cv/
