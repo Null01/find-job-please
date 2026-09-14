@@ -14,8 +14,9 @@ services:
     dockerContext: ./web
     plan: free
     healthCheckPath: /login/
-    # Aplica migraciones antes de mandar tráfico a la versión nueva.
-    preDeployCommand: python manage.py migrate --noinput
+    # Nota: el plan free NO soporta preDeployCommand. Las migraciones se aplican
+    # al arrancar el contenedor (ver CMD en web/Dockerfile: migrate && gunicorn).
+    # En un plan de pago podrías usar preDeployCommand aquí y quitar el migrate del CMD.
     envVars:
       # --- No secretos (pueden vivir en el repo) ---
       - key: DJANGO_DEBUG

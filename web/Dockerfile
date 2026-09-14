@@ -28,6 +28,9 @@ EXPOSE 8000
 
 # Arranque de producción. Render inyecta $PORT; en local, docker-compose
 # sobreescribe este CMD con runserver.
-# Workers: 1 por defecto (cabe en Render free, 512 MB). Subir con WEB_CONCURRENCY
-# en planes con más RAM. El sync corre en un hilo aparte, así que 1 worker no bloquea.
-CMD ["sh", "-c", "gunicorn config.wsgi:application --bind 0.0.0.0:${PORT:-8000} --workers ${WEB_CONCURRENCY:-1}"]
+# Arranque de producción:
+#  1) migrate — el plan free de Render no soporta preDeployCommand, así que las
+#     migraciones se aplican aquí (idempotente: no-op si ya están aplicadas).
+#  2) gunicorn — workers=1 por defecto (cabe en free, 512 MB); subir con
+#     WEB_CONCURRENCY en planes con más RAM. El sync corre en un hilo aparte.
+CMD ["sh", "-c", "python manage.py migrate --noinput && gunicorn config.wsgi:application --bind 0.0.0.0:${PORT:-8000} --workers ${WEB_CONCURRENCY:-1}"]
