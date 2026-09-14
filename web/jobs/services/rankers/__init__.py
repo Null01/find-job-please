@@ -13,9 +13,13 @@ import os
 
 def get_active_ranker():
     strategy = os.environ.get("BUSINESS_RANKER_STRATEGY", "embeddings").lower()
-    if strategy == "keyword":
-        from .keyword import KeywordRanker
-        return KeywordRanker()
-    # "embeddings" y cualquier valor desconocido → semántico local (default).
-    from .embeddings import EmbeddingsRanker
-    return EmbeddingsRanker()
+    if strategy != "keyword":
+        # "embeddings" (o valor desconocido) → semántico, SOLO si sus dependencias
+        # están instaladas. En la imagen slim (sin torch/sentence-transformers) cae
+        # a keyword en vez de fallar.
+        import importlib.util
+        if importlib.util.find_spec("sentence_transformers") is not None:
+            from .embeddings import EmbeddingsRanker
+            return EmbeddingsRanker()
+    from .keyword import KeywordRanker
+    return KeywordRanker()

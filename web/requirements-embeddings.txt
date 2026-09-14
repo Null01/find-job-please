@@ -1,0 +1,10 @@
+# Dependencias del ranker semántico (BUSINESS_RANKER_STRATEGY=embeddings).
+# NO se instalan en la imagen de producción (Render usa "keyword", liviano).
+#
+# Instalar junto a las base:
+#   pip install -r requirements.txt -r requirements-embeddings.txt
+#
+# En Linux, para la build CPU de torch (evita las libs CUDA, ~2 GB):
+--extra-index-url https://download.pytorch.org/whl/cpu
+torch
+sentence-transformers>=3.0

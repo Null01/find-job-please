@@ -7,5 +7,6 @@ django-storages[s3]>=1.14  # media (CVs) en Cloudflare R2 (S3-compatible)
 pandas>=2.2
 python-jobspy>=1.1.80
 pypdf>=5.1
-sentence-transformers>=3.0
 zxcvbn>=4.4
+# El ranker semántico (torch + sentence-transformers, ~1.5 GB) NO va aquí:
+# está en requirements-embeddings.txt y se instala solo cuando se usa "embeddings".

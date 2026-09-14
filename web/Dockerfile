@@ -5,11 +5,17 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 
 WORKDIR /app
 
-# Torch CPU-only primero (evita bajar las libs de CUDA, imagen mucho más liviana).
-RUN pip install --no-cache-dir torch --index-url https://download.pytorch.org/whl/cpu
+# Imagen slim por defecto (solo dependencias base → ranker "keyword").
+# Para incluir el ranker semántico (torch + sentence-transformers, ~1.5 GB):
+#   docker build --build-arg INSTALL_EMBEDDINGS=true ...
+# docker-compose lo activa en local; Render usa el default (false) = imagen liviana.
+ARG INSTALL_EMBEDDINGS=false
 
-COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+COPY requirements.txt requirements-embeddings.txt ./
+RUN pip install --no-cache-dir -r requirements.txt \
+ && if [ "$INSTALL_EMBEDDINGS" = "true" ]; then \
+        pip install --no-cache-dir -r requirements-embeddings.txt; \
+    fi
 
 COPY . .
 
@@ -22,4 +28,6 @@ EXPOSE 8000
 
 # Arranque de producción. Render inyecta $PORT; en local, docker-compose
 # sobreescribe este CMD con runserver.
-CMD ["sh", "-c", "gunicorn config.wsgi:application --bind 0.0.0.0:${PORT:-8000} --workers 2"]
+# Workers: 1 por defecto (cabe en Render free, 512 MB). Subir con WEB_CONCURRENCY
+# en planes con más RAM. El sync corre en un hilo aparte, así que 1 worker no bloquea.
+CMD ["sh", "-c", "gunicorn config.wsgi:application --bind 0.0.0.0:${PORT:-8000} --workers ${WEB_CONCURRENCY:-1}"]

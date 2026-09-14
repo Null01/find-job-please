@@ -173,6 +173,29 @@ La primera corrida descarga el modelo (~1 GB) al volumen `hf_cache`; luego los
 re-rankings son de segundos. Agregar una estrategia (p. ej. LLM) = un archivo en
 `web/jobs/services/rankers/` + una entrada en su registro.
 
+> **Peso de la imagen.** `embeddings` necesita `torch` + `sentence-transformers`
+> (~1.5 GB). Por eso la imagen es **slim por defecto** (solo `keyword`, ~730 MB,
+> ideal para Render free) y las deps de embeddings se instalan aparte:
+> - **Docker local:** `docker-compose` ya activa embeddings (build-arg `INSTALL_EMBEDDINGS=true`).
+> - **Sin Docker:** `pip install -r requirements.txt -r requirements-embeddings.txt`.
+> - Si eliges `embeddings` sin esas deps, la app cae a `keyword` automáticamente
+>   (no falla).
+
+**Cómo correr cada modo** (define `BUSINESS_RANKER_STRATEGY` en tu `.env` y reinicia):
+
+```bash
+# Modo keyword (liviano, sin modelo — el que usa Render):
+#   .env → BUSINESS_RANKER_STRATEGY=keyword
+docker compose up -d
+
+# Modo embeddings (semántico, local — docker-compose instala torch + sentence-transformers):
+#   .env → BUSINESS_RANKER_STRATEGY=embeddings   (o déjalo vacío; es el default)
+docker compose up --build -d
+```
+
+Sin Docker, para `embeddings` instala también las deps:
+`pip install -r requirements.txt -r requirements-embeddings.txt`.
+
 ### Ajustar la búsqueda
 
 Edita `web/jobs/services/config.py`:

@@ -15,7 +15,11 @@ services:
       retries: 10
 
   web:
-    build: ./web
+    build:
+      context: ./web
+      args:
+        # Local incluye el ranker semántico; Render usa el default (false) = slim.
+        INSTALL_EMBEDDINGS: "true"
     restart: unless-stopped
     command: >
       sh -c "python manage.py makemigrations jobs &&
